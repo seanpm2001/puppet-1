@@ -63,22 +63,33 @@ define sslcert::certificate(
         $private_key_source="ssl/${title}.key"
     }
 
-    # lint:ignore:puppet_url_without_modules
-    # FIXME
+
+    $secrets_base = '/etc/puppet/private/modules/secret/secrets'
+    if !$use_cergen and find_file("${secrets_base}/ssl/${title}.crt") {
+        $cert_content = secret("ssl/${title}.crt")
+        $cert_source = undef
+    } elsif $use_cergen and find_file("${secrets_base}/certificates/${title}/${title}.crt.pem") {
+        $cert_content = secret("certificates/${title}/${title}.crt.pem")
+        $cert_source = undef
+    } else {
+        $cert_content = undef
+        $cert_source = "puppet:///files/ssl/${title}.crt" # lint:ignore:puppet_url_without_modules
+    }
+
     if $ensure != 'absent' {
         file { "/etc/ssl/localcerts/${title}.crt":
-            ensure => $ensure,
-            owner  => 'root',
-            group  => $group,
-            mode   => '0444',
-            source => "puppet:///files/ssl/${title}.crt",
+            ensure  => $ensure,
+            owner   => 'root',
+            group   => $group,
+            mode    => '0444',
+            content => $cert_content,
+            source  => $cert_source,
         }
     } else {
         file { "/etc/ssl/localcerts/${title}.crt":
             ensure => $ensure,
         }
     }
-    # lint:endignore
 
     if !$skip_private {
         file { "/etc/ssl/private/${title}.key":

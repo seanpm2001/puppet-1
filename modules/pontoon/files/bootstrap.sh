@@ -62,6 +62,8 @@ profile::base::manage_resolv_conf: false
 
 puppetmaster: $(hostname --fqdn)
 puppet_ca_server: $(hostname --fqdn)
+
+profile::apt::use_proxy: false
 EOF
   systemctl mask puppet-master
 
@@ -71,7 +73,7 @@ EOF
     $init || true # XXX catch failures?
 
   # Solve race on hieradata/auto.yaml
-  install -o puppet -g puppet /dev/null /etc/puppet/hieradata/auto.yaml
+  install -o puppet -g puppet -m 444 /dev/null /etc/puppet/hieradata/auto.yaml
 }
 
 init_ssl() {
